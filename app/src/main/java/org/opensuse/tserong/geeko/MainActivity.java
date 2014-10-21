@@ -9,7 +9,8 @@ import android.view.MenuItem;
 
 public class MainActivity extends /*ActionBar*/Activity {
 
-    private GLSurfaceView mGLView;
+    //private GLSurfaceView mGLView;
+    private GeekoView mGeekoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -17,21 +18,25 @@ public class MainActivity extends /*ActionBar*/Activity {
         // TODO: can activity_main.xml be deleted now?
         //setContentView(R.layout.activity_main);
 
-        mGLView = new GeekoGLSurfaceView(this);
-        setContentView(mGLView);
+        //mGLView = new GeekoGLSurfaceView(this);
+        //setContentView(mGLView);
+        mGeekoView = new GeekoView(this);
+        setContentView(mGeekoView);
 
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mGLView.onPause();
+        mGeekoView.onPause();
+        //mGLView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mGLView.onResume();
+        mGeekoView.onResume();
+        //mGLView.onResume();
     }
 
     @Override
