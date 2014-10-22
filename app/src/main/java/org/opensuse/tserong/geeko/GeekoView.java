@@ -4,26 +4,20 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LightingColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-/**
- * Created by tserong on 10/21/14.
- */
 public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
     // Basic thread logic lifted from LunarLander sample
     class GeekoThread extends Thread {
 
         private Context mContext;
-        private SurfaceHolder mSurfaceHolder;
+        private final SurfaceHolder mSurfaceHolder;
 
         private int mCanvasWidth = -1;
         private int mCanvasHeight = -1;
@@ -318,6 +312,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                 mThread.join();
                 retry = false;
             } catch (InterruptedException e) {
+                // Don't care
             }
         }
     }
