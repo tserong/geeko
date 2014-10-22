@@ -224,6 +224,9 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                         mBranch = 1;
                     } else if (!mSecondBranch.equals(0,0)) {
                         mBranch = 2;
+                    } else {
+                        c.drawARGB(16, 70, 69, 71); // Fade
+                        mSleepDuration = 1000;
                     }
                 } else if (mBranch == 1) {
                     drawGeeko();
@@ -232,10 +235,12 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                     } else {
                         mBranch = 0;
                         c.drawARGB(16, 70, 69, 71); // Fade
+                        mSleepDuration = 1000;
                     }
                 } else {
                     mBranch = 0;
                     c.drawARGB(16, 70, 69, 71); // Fade
+                    mSleepDuration = 1000;
                 }
                 mPoint = 0;
             }
