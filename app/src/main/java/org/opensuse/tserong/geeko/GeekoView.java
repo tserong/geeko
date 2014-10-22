@@ -13,7 +13,6 @@ import android.view.SurfaceView;
 
 public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
-    // Basic thread logic lifted from LunarLander sample
     class GeekoThread extends Thread {
 
         private Context mContext;
@@ -41,6 +40,8 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private long mSleepDuration = 50;
 
+        private boolean mSurfaceCreated = false;
+
         public GeekoThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
             mContext = context;
@@ -57,6 +58,12 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
+        public void surfaceCreated() {
+            synchronized (mSurfaceHolder) {
+                mSurfaceCreated = true;
+            }
+        }
+
         public void setRunning(boolean b) {
             synchronized (mRunLock) {
                 mRun = b;
@@ -65,7 +72,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private Point[] generateTrunk() {
             Point[] p = new Point[4];
-            // TODO: Fix hard-coded 10
+            // TODO: Fix hard-coded 10, likewise line widths (problematic on lower rez devices)
             p[0] = new Point((int)(Math.random() * mCanvasWidth), mCanvasHeight + 10);
             p[3] = new Point((int)(Math.random() * mCanvasWidth), (int)(Math.random() * mCanvasHeight / 2));
             if (Math.random() > 0.5) {
@@ -244,12 +251,19 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         @Override
         public void run() {
             while (mRun) {
+                if (!mSurfaceCreated) {
+                    continue;
+                }
                 Canvas c = null;
                 try {
                     c = mSurfaceHolder.lockCanvas(null);
                     synchronized (mSurfaceHolder) {
-                        // if running, do stuff
+                        // mSurfaceHolder sync is in case surface changed while we're not looking
                         synchronized(mRunLock) {
+                            // mRunLock sync is to ensure mRun isn't changed while we're
+                            // screwing around with the canvas (see LunarLander SDK sample for
+                            // this logic:
+                            //   https://android.googlesource.com/platform/development/+/master/samples/LunarLander/src/com/example/android/lunarlander/LunarView.java?autodive=0%2F%2F
                             if (mRun) {
                                 doDraw(c);
                             }
@@ -262,7 +276,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                 }
 
                 try {
-                    // Is this sane?
                     sleep(mSleepDuration, 0);
                 } catch (InterruptedException e) {
                     // Don't care
@@ -273,28 +286,47 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private GeekoThread mThread;
+    private Context mContext;
+    private SurfaceHolder mHolder;
 
     public GeekoView(Context context) {
         super(context);
+        mContext = context;
+        mHolder = getHolder();
+        mHolder.addCallback(this);
+    }
 
-        SurfaceHolder holder = getHolder();
-        holder.addCallback(this);
-
-        mThread = new GeekoThread(holder, context);
+    private void killThread() {
+        boolean retry = true;
+        mThread.setRunning(false);
+        // Have to wait for the thread to finish, because it might be fiddling with
+        // the Surface, which can't be used after surfaceDestroyed() returns.
+        while (retry) {
+            try {
+                mThread.join();
+                retry = false;
+            } catch (InterruptedException e) {
+                // Don't care
+            }
+        }
     }
 
     public void onPause() {
-        mThread.setRunning(false);
+        killThread();
     }
 
     public void onResume() {
+        // The onPause/onResume logic means the thread is completely dead when the app isn't
+        // active.  The downside is you lose the current display if you switch away from the
+        // app.  Oh, well...
+        // TODO: look at preserving the current bitmap across pause/resume
+        mThread = new GeekoThread(mHolder, mContext);
         mThread.setRunning(true);
+        mThread.start();
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        mThread.setRunning(true);
-        // TODO: this throws "java.lang.IllegalThreadStateException: Thread already started" when resuming
-        mThread.start();
+        mThread.surfaceCreated();
     }
 
 
@@ -304,16 +336,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        boolean retry = true;
-        mThread.setRunning(false);
-        // TODO: can this ever lock up indefinitely?
-        while (retry) {
-            try {
-                mThread.join();
-                retry = false;
-            } catch (InterruptedException e) {
-                // Don't care
-            }
-        }
+        killThread();
     }
 }
