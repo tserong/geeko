@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LightingColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -127,7 +128,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             Canvas c = new Canvas(mBitmap);
 
             if (Math.random() > 0.25) {  // >1.0 disables geekos
-                Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko);
+                Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko_black);
                 Matrix m = new Matrix();
                 m.setRotate(-10.0f, 0.5f, 0.5f);
                 if (mFlipGeeko) {
@@ -138,7 +139,9 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                 int halfW = (int)((float)geeko.getWidth() * 0.125f);
                 int halfH = (int)((float)geeko.getHeight() * 0.125f);
                 m.postTranslate(mDrawGeekoAt.x - halfW, mDrawGeekoAt.y - halfH * 2);
-                c.drawBitmap(geeko, m, null);
+                Paint p = new Paint();
+                p.setColorFilter(new LightingColorFilter(0, mPaint.getColor()));
+                c.drawBitmap(geeko, m, p);
             }
 
         }
