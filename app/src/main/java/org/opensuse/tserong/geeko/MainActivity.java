@@ -1,15 +1,12 @@
 package org.opensuse.tserong.geeko;
 
 import android.app.Activity;
-import android.opengl.GLSurfaceView;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends /*ActionBar*/Activity {
+public class MainActivity extends Activity {
 
-    //private GLSurfaceView mGLView;
     private GeekoView mGeekoView;
 
     @Override
@@ -18,8 +15,6 @@ public class MainActivity extends /*ActionBar*/Activity {
         // TODO: can activity_main.xml be deleted now?
         //setContentView(R.layout.activity_main);
 
-        //mGLView = new GeekoGLSurfaceView(this);
-        //setContentView(mGLView);
         mGeekoView = new GeekoView(this);
         setContentView(mGeekoView);
 
@@ -29,14 +24,12 @@ public class MainActivity extends /*ActionBar*/Activity {
     protected void onPause() {
         super.onPause();
         mGeekoView.onPause();
-        //mGLView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mGeekoView.onResume();
-        //mGLView.onResume();
     }
 
     @Override
