@@ -41,6 +41,11 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private int mBranch = 0;
 
+        private Point mDrawGeekoAt = new Point(0, 0);
+        private boolean mFlipGeeko = false;
+
+        private long mSleepDuration = 50;
+
         public GeekoThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
             mContext = context;
@@ -118,6 +123,26 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             return p;
         }
 
+        private void drawGeeko() {
+            Canvas c = new Canvas(mBitmap);
+
+            if (Math.random() > 0.25) {  // >1.0 disables geekos
+                Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko);
+                Matrix m = new Matrix();
+                m.setRotate(-10.0f, 0.5f, 0.5f);
+                if (mFlipGeeko) {
+                    m.postScale(-1, 1);
+                    m.postTranslate(geeko.getWidth(), 0);
+                }
+                m.postScale(0.25f, 0.25f);
+                int halfW = (int)((float)geeko.getWidth() * 0.125f);
+                int halfH = (int)((float)geeko.getHeight() * 0.125f);
+                m.postTranslate(mDrawGeekoAt.x - halfW, mDrawGeekoAt.y - halfH * 2);
+                c.drawBitmap(geeko, m, null);
+            }
+
+        }
+
         private void doDraw(Canvas canvas) {
             Canvas c = new Canvas(mBitmap);
 
@@ -144,6 +169,8 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
                         mFirstBranch.set(0, 0);
                         mSecondBranch.set(0, 0);
+
+                        mSleepDuration = (long)(Math.random() * 25) + 25;
                 }
                 // Thanks http://www.fractalnet.org/CAD/curve/BezierCurve.pdf, good to see this is still online ;)
                 for (int i = 0; i < 64; i++) {
@@ -166,6 +193,10 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                             mSecondBranch.set((int)mPoints[i * 2], (int)mPoints[i * 2 + 1]);
                         }
                     }
+                    if (i == 32 && mBranch == 1) {
+                        mFlipGeeko = bezier[3].x > bezier[0].x;
+                        mDrawGeekoAt.set((int)mPoints[i * 2], (int)mPoints[i * 2 + 1]);
+                    }
                 }
 
             }
@@ -186,66 +217,13 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             mPoint++;
             if (mPoint >= 63) {
                 if (mBranch == 0) {
-
-                    if (Math.random() > 1.0) {  // >1.0 disables geekos
-                        Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko);
-                        // TODO: WTF does filter do here?
-                        Bitmap miniGeeko = Bitmap.createScaledBitmap(geeko, geeko.getWidth() / 8, geeko.getHeight() / 8, true);
-                        Matrix m = new Matrix();
-                        int halfW = miniGeeko.getWidth() / 2;
-                        int halfH = miniGeeko.getHeight() / 2;
-
-                        for (int i = 63; i > 0; i--) {
-                            float dx = mPoints[i * 2] - mPoints[(i - 1) * 2];
-                            float dy = mPoints[i * 2 + 1] - mPoints[(i - 1) * 2 + 1];
-                            if (Math.abs(dx) > 20.0f || Math.abs(dy) > 20.0f) {
-                                m.setRotate((float) Math.toDegrees(Math.atan2(Math.abs(dx), Math.abs(dy)) - 90.0f), halfW, halfH);
-                                m.postTranslate(
-                                        mPoints[(i - 1) * 2] + dx / 2 - halfW,
-                                        mPoints[(i - 1) * 2 + 1] + dy / 2 - halfH);
-                                c.drawBitmap(miniGeeko, m, null);
-                                break;
-                            }
-                        }
-
-                        /*
-                        Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko);
-                        Matrix m = new Matrix();
-                        //m.setRotate(0.0f);
-                        m.setScale(0.25f, 0.25f);
-                        int halfW = (int)((float)geeko.getWidth() * 0.125f);
-                        int halfH = (int)((float)geeko.getHeight() * 0.125f);
-                        //m.setTranslate(100.0f, 100.0f);
-                        //c.drawBitmap(geeko, m, null);
-
-                        for (int i = 63; i > 0 ; i--) {
-                            float dx = mPoints[i * 2] - mPoints[(i - 1) * 2];
-                            float dy = mPoints[i * 2 + 1] - mPoints[(i -1 ) * 2 + 1];
-                            if (Math.abs(dx) > 10f || Math.abs(dy) > 10.0f) {
-                                m.postRotate((float)Math.toDegrees(Math.atan2(dx, dy)));
-                                m.postTranslate(
-                                        mPoints[(i - 1) * 2] + dx / 2 - halfW,
-                                        mPoints[(i -1 ) * 2 + 1] + dy / 2 - halfH);
-                                c.drawBitmap(geeko, m, null);
-                                break;
-                            }
-                        }
-                        */
-                        /*
-                        Drawable geeko = mContext.getResources().getDrawable(R.drawable.geeko);
-                        BitmapDrawable b = new BitmapDrawable(geeko);
-                        int width = geeko.getIntrinsicWidth();
-                        int height = geeko.getIntrinsicHeight();
-                        geeko.setBounds(0, 0, width, height);
-                        geeko.draw(c);*/
-                    }
-
                     if (!mFirstBranch.equals(0,0)) {
                         mBranch = 1;
                     } else if (!mSecondBranch.equals(0,0)) {
                         mBranch = 2;
                     }
                 } else if (mBranch == 1) {
+                    drawGeeko();
                     if (!mSecondBranch.equals(0,0)) {
                         mBranch = 2;
                     } else {
@@ -281,12 +259,14 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                         mSurfaceHolder.unlockCanvasAndPost(c);
                     }
                 }
+
                 try {
                     // Is this sane?
-                    sleep(50, 0);
+                    sleep(mSleepDuration, 0);
                 } catch (InterruptedException e) {
                     // Don't care
                 }
+
             }
         }
     }
