@@ -33,7 +33,6 @@ public class MainActivity extends /*ActionBar*/Activity {
     }
 
     @Override
-    // TODO: app crashes when switching back to it
     protected void onResume() {
         super.onResume();
         mGeekoView.onResume();

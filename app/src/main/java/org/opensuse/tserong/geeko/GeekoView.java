@@ -312,6 +312,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
     public void surfaceCreated(SurfaceHolder holder) {
         mThread.setRunning(true);
+        // TODO: this throws "java.lang.IllegalThreadStateException: Thread already started" when resuming
         mThread.start();
     }
 
