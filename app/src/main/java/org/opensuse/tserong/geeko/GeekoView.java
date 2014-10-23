@@ -15,7 +15,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
     class GeekoThread extends Thread {
 
-        private Context mContext;
         private final SurfaceHolder mSurfaceHolder;
 
         private int mCanvasWidth = -1;
@@ -25,6 +24,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         private final Object mRunLock = new Object();
 
         private Bitmap mBitmap;
+        private Bitmap mGeeko;
 
         private Paint mPaint = new Paint();
         private int mPoint = 0;
@@ -47,7 +47,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         public GeekoThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
-            mContext = context;
+            mGeeko = BitmapFactory.decodeResource(context.getResources(), R.drawable.geeko_black);
             float density = context.getResources().getDisplayMetrics().density;
             mTrunkWidth *= density;
             mFirstBranchWidth *= density;
@@ -136,21 +136,20 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             Canvas c = new Canvas(mBitmap);
 
             if (Math.random() > 0.25) {  // >1.0 disables geekos
-                Bitmap geeko = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.geeko_black);
                 Matrix m = new Matrix();
                 m.setRotate(-10.0f, 0.5f, 0.5f);
                 if (mFlipGeeko) {
                     m.postScale(-1, 1);
-                    m.postTranslate(geeko.getWidth(), 0);
+                    m.postTranslate(mGeeko.getWidth(), 0);
                 }
                 m.postScale(mGeekoScale, mGeekoScale);
 
-                int halfW = (int)((float)geeko.getWidth() * mGeekoScale / 2);
-                int halfH = (int)((float)geeko.getHeight() * mGeekoScale / 2);
+                int halfW = (int)((float)mGeeko.getWidth() * mGeekoScale / 2);
+                int halfH = (int)((float)mGeeko.getHeight() * mGeekoScale / 2);
                 m.postTranslate(mDrawGeekoAt.x - halfW, mDrawGeekoAt.y - halfH * 2);
                 Paint p = new Paint();
                 p.setColorFilter(new LightingColorFilter(0, mPaint.getColor()));
-                c.drawBitmap(geeko, m, p);
+                c.drawBitmap(mGeeko, m, p);
             }
 
         }
