@@ -12,7 +12,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         mGeekoView = new GeekoView(this);
         setContentView(mGeekoView);
-
+        // TODO: Somehow it stops drawing if the screen blanks (i.e. it doesn't start again
+        // afer you unblank the screen)
     }
 
     @Override
