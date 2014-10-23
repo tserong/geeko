@@ -30,6 +30,11 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         private int mPoint = 0;
         float mPoints[] = new float[128];
 
+        float mTrunkWidth = 20.0f;
+        float mFirstBranchWidth = 10.0f;
+        float mSecondBranchWidth = 7.5f;
+        float mGeekoScale = 1.0f;
+
         private Point mFirstBranch = new Point(0, 0);
         private Point mSecondBranch = new Point(0, 0);
 
@@ -45,6 +50,17 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         public GeekoThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
             mContext = context;
+            float density = context.getResources().getDisplayMetrics().density;
+            mTrunkWidth *= density;
+            mFirstBranchWidth *= density;
+            mSecondBranchWidth *= density;
+            mGeekoScale = 0.20f;
+            if (density > 1.0f) {
+                // This gives a geeko size that's "about right" for mdpi, xhdpi, xxhdpi,
+                // but I'm sure there's some non-linear thing going on here that I'd
+                // understand better if my math fu were stronger.
+                mGeekoScale += 0.025 * density;
+            }
         }
 
         public void setSurfaceSize(int width, int height) {
@@ -72,8 +88,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private Point[] generateTrunk() {
             Point[] p = new Point[4];
-            // TODO: Fix hard-coded 10, likewise line widths (problematic on lower rez devices)
-            p[0] = new Point((int)(Math.random() * mCanvasWidth), mCanvasHeight + 10);
+            p[0] = new Point((int)(Math.random() * mCanvasWidth), mCanvasHeight + (int)(mTrunkWidth / 2));
             p[3] = new Point((int)(Math.random() * mCanvasWidth), (int)(Math.random() * mCanvasHeight / 2));
             if (Math.random() > 0.5) {
                 int rightMostPoint = Math.max(p[0].x, p[3].x);
@@ -136,9 +151,10 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                     m.postScale(-1, 1);
                     m.postTranslate(geeko.getWidth(), 0);
                 }
-                m.postScale(0.25f, 0.25f);
-                int halfW = (int)((float)geeko.getWidth() * 0.125f);
-                int halfH = (int)((float)geeko.getHeight() * 0.125f);
+                m.postScale(mGeekoScale, mGeekoScale);
+
+                int halfW = (int)((float)geeko.getWidth() * mGeekoScale / 2);
+                int halfH = (int)((float)geeko.getHeight() * mGeekoScale / 2);
                 m.postTranslate(mDrawGeekoAt.x - halfW, mDrawGeekoAt.y - halfH * 2);
                 Paint p = new Paint();
                 p.setColorFilter(new LightingColorFilter(0, mPaint.getColor()));
@@ -207,14 +223,13 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
             }
 
-            //Paint p = new Paint();
-            //p.setARGB(255, 255, 255, 255);
+            // TODO: vines taper off too slowly on mdpi screens
             if (mBranch == 1) {
-                mPaint.setStrokeWidth(Math.min(20, 63 - mPoint));
+                mPaint.setStrokeWidth(Math.min(mFirstBranchWidth, 63 - mPoint));
             } else if (mBranch == 2) {
-                mPaint.setStrokeWidth(Math.min(15, 63 - mPoint));
+                mPaint.setStrokeWidth(Math.min(mSecondBranchWidth, 63 - mPoint));
             } else {
-                mPaint.setStrokeWidth(Math.min(40, 63 - mPoint));
+                mPaint.setStrokeWidth(Math.min(mTrunkWidth, 63 - mPoint));
             }
             mPaint.setStrokeCap(Paint.Cap.ROUND);
             mPaint.setAntiAlias(true);
@@ -324,6 +339,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         mThread.setRunning(true);
         mThread.start();
     }
+
 
     public void surfaceCreated(SurfaceHolder holder) {
         mThread.surfaceCreated();
