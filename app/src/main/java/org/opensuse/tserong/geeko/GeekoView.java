@@ -45,8 +45,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private long mSleepDuration = 50;
 
-        private boolean mSurfaceCreated = false;
-
         public GeekoThread(SurfaceHolder holder, Context context) {
             mSurfaceHolder = holder;
             mContext = context;
@@ -71,12 +69,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                 Canvas c = new Canvas(mBitmap);
                 c.drawARGB(255, 70, 69, 71); // Dark Grey
                 mPoint = 0;
-            }
-        }
-
-        public void surfaceCreated() {
-            synchronized (mSurfaceHolder) {
-                mSurfaceCreated = true;
             }
         }
 
@@ -266,9 +258,6 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         @Override
         public void run() {
             while (mRun) {
-                if (!mSurfaceCreated) {
-                    continue;
-                }
                 Canvas c = null;
                 try {
                     c = mSurfaceHolder.lockCanvas(null);
@@ -311,7 +300,39 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
         mHolder.addCallback(this);
     }
 
-    private void killThread() {
+    public void onPause() {
+        // Nothing to see here
+    }
+
+    public void onResume() {
+        // Nothing to see here
+    }
+
+
+    public void surfaceCreated(SurfaceHolder holder) {
+        // Tying the thread to the surface means it's created and destroyed nicely
+        // when switching away from the app, but means that rendering continues if
+        // you hit the power button to turn the screen off, or the screen blanks
+        // (i.e. the renderer keeps running, presumably chewing battery).  This
+        // is arguably undesirable, but makes for a simpler implementation.  The
+        // alternative is creating and killing the thread in onResume() / onPause(),
+        // but that means querying or caching the surface state and passing it
+        // to the renderer in onResume() in case the surface hasn't been destroyed.
+        // See https://source.android.com/devices/graphics/architecture.html#activity
+        // for further discussion.
+        // TODO: look at preserving the current bitmap across pause/resume
+        mThread = new GeekoThread(mHolder, mContext);
+        mThread.setRunning(true);
+        mThread.start();
+    }
+
+
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        mThread.setSurfaceSize(width, height);
+    }
+
+
+    public void surfaceDestroyed(SurfaceHolder holder) {
         boolean retry = true;
         mThread.setRunning(false);
         // Have to wait for the thread to finish, because it might be fiddling with
@@ -324,34 +345,5 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                 // Don't care
             }
         }
-    }
-
-    public void onPause() {
-        killThread();
-    }
-
-    public void onResume() {
-        // The onPause/onResume logic means the thread is completely dead when the app isn't
-        // active.  The downside is you lose the current display if you switch away from the
-        // app.  Oh, well...
-        // TODO: look at preserving the current bitmap across pause/resume
-        mThread = new GeekoThread(mHolder, mContext);
-        mThread.setRunning(true);
-        mThread.start();
-    }
-
-
-    public void surfaceCreated(SurfaceHolder holder) {
-        mThread.surfaceCreated();
-    }
-
-
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        mThread.setSurfaceSize(width, height);
-    }
-
-
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        killThread();
     }
 }
