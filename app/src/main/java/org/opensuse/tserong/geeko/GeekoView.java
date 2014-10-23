@@ -138,15 +138,22 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             if (Math.random() > 0.25) {  // >1.0 disables geekos
                 Matrix m = new Matrix();
                 m.setRotate(-10.0f, 0.5f, 0.5f);
+                // Translating by half the width centers geeko on the
+                // x coordinate we want to draw at.  Translating by 90%
+                // of the height tends to give a reasonable but not
+                // entirely perfect position.
+                // TODO: Ideally the rotation would match the angle of the branch,
+                // and geeko's feet would both always be touching it.  It's fairly
+                // goot ATM though.
                 if (mFlipGeeko) {
                     m.postScale(-1, 1);
-                    m.postTranslate(mGeeko.getWidth(), 0);
+                    m.postTranslate(mGeeko.getWidth() / 2, -mGeeko.getHeight() * 0.85f);
+                } else {
+                    m.postTranslate(-mGeeko.getWidth() / 2, -mGeeko.getHeight() * 0.85f);
                 }
                 m.postScale(mGeekoScale, mGeekoScale);
 
-                int halfW = (int)((float)mGeeko.getWidth() * mGeekoScale / 2);
-                int halfH = (int)((float)mGeeko.getHeight() * mGeekoScale / 2);
-                m.postTranslate(mDrawGeekoAt.x - halfW, mDrawGeekoAt.y - halfH * 2);
+                m.postTranslate(mDrawGeekoAt.x, mDrawGeekoAt.y);
                 Paint p = new Paint();
                 p.setColorFilter(new LightingColorFilter(0, mPaint.getColor()));
                 c.drawBitmap(mGeeko, m, p);
