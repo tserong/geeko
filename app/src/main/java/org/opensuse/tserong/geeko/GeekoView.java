@@ -193,6 +193,7 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
                         mSleepDuration = (long)(Math.random() * 25) + 25;
                 }
                 // Thanks http://www.fractalnet.org/CAD/curve/BezierCurve.pdf, good to see this is still online ;)
+                // TODO: Could this be more sensibly implemented in terms of Android's Path class?
                 for (int i = 0; i < 64; i++) {
                     float mu = (float) i / 64;
                     float mum1, mum13, mu3;
