@@ -53,6 +53,9 @@ public class GeekoWallpaper extends WallpaperService {
 
         private int mBranch = 0;
 
+        private int mBranchCount = 0;
+        private final int mBranchesBeforeReset = 50;
+
         private Point mDrawGeekoAt = new Point(0, 0);
         private boolean mFlipGeeko = false;
 
@@ -236,7 +239,12 @@ public class GeekoWallpaper extends WallpaperService {
                                 0xff00843e      // Dark Green
                         };
 
-                        c.drawARGB(16, 70, 69, 71); // Fade
+                        if (mBranchCount++ > mBranchesBeforeReset) {
+                            mBranchCount = 0;
+                            c.drawARGB(255, 70, 69, 71); // Wipe to dark grey
+                        } else {
+                            c.drawARGB(16, 70, 69, 71); // Fade
+                        }
 
                         mPaint.setColor(colors[(int)(Math.random() * colors.length)]);
 
