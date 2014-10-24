@@ -61,7 +61,7 @@ public class GeekoWallpaper extends WallpaperService {
 
         private long mSleepDuration = 50;
 
-        private final Runnable mDrawGeeko = new Runnable() {
+        private final Runnable mGeekoRunner = new Runnable() {
             public void run() {
                 drawFrame();
             }
@@ -93,7 +93,7 @@ public class GeekoWallpaper extends WallpaperService {
         @Override
         public void onDestroy() {
             super.onDestroy();
-            mHandler.removeCallbacks(mDrawGeeko);
+            mHandler.removeCallbacks(mGeekoRunner);
         }
 
         @Override
@@ -102,7 +102,7 @@ public class GeekoWallpaper extends WallpaperService {
             if (mVisible) {
                 drawFrame();
             } else {
-                mHandler.removeCallbacks(mDrawGeeko);
+                mHandler.removeCallbacks(mGeekoRunner);
             }
         }
 
@@ -126,7 +126,7 @@ public class GeekoWallpaper extends WallpaperService {
         public void onSurfaceDestroyed(SurfaceHolder holder) {
             super.onSurfaceDestroyed(holder);
             mVisible = false;
-            mHandler.removeCallbacks(mDrawGeeko);
+            mHandler.removeCallbacks(mGeekoRunner);
         }
 
         /*
@@ -338,9 +338,9 @@ public class GeekoWallpaper extends WallpaperService {
                 }
             }
 
-            mHandler.removeCallbacks(mDrawGeeko);
+            mHandler.removeCallbacks(mGeekoRunner);
             if (mVisible) {
-                mHandler.postDelayed(mDrawGeeko, mSleepDuration);
+                mHandler.postDelayed(mGeekoRunner, mSleepDuration);
             }
         }
     }
