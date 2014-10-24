@@ -8,20 +8,33 @@ import android.graphics.LightingColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.os.Handler;
+import android.service.wallpaper.WallpaperService;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 
-public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
+public class GeekoWallpaper extends WallpaperService {
 
-    class GeekoThread extends Thread {
+    private final Handler mHandler = new Handler();
 
-        private final SurfaceHolder mSurfaceHolder;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    public Engine onCreateEngine() {
+        return new GeekoEngine();
+    }
+
+    class GeekoEngine extends Engine {
 
         private int mCanvasWidth = -1;
         private int mCanvasHeight = -1;
-
-        private boolean mRun = false;
-        private final Object mRunLock = new Object();
 
         private Bitmap mBitmap;
         private Bitmap mGeeko;
@@ -45,8 +58,16 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
 
         private long mSleepDuration = 50;
 
-        public GeekoThread(SurfaceHolder holder, Context context) {
-            mSurfaceHolder = holder;
+        private final Runnable mDrawGeeko = new Runnable() {
+            public void run() {
+                drawFrame();
+            }
+        };
+
+        private boolean mVisible;
+
+        public GeekoEngine() {
+            Context context = getApplicationContext();
             mGeeko = BitmapFactory.decodeResource(context.getResources(), R.drawable.geeko_black);
             float density = context.getResources().getDisplayMetrics().density;
             mTrunkWidth *= density;
@@ -61,22 +82,54 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        public void setSurfaceSize(int width, int height) {
-            synchronized (mSurfaceHolder) {
-                mCanvasWidth = width;
-                mCanvasHeight = height;
-                mBitmap = Bitmap.createBitmap(mCanvasWidth, mCanvasHeight, Bitmap.Config.ARGB_8888);
-                Canvas c = new Canvas(mBitmap);
-                c.drawARGB(255, 70, 69, 71); // Dark Grey
-                mPoint = 0;
+        @Override
+        public void onCreate(SurfaceHolder surfaceHolder) {
+            super.onCreate(surfaceHolder);
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            mHandler.removeCallbacks(mDrawGeeko);
+        }
+
+        @Override
+        public void onVisibilityChanged(boolean visible) {
+            mVisible = visible;
+            if (mVisible) {
+                drawFrame();
+            } else {
+                mHandler.removeCallbacks(mDrawGeeko);
             }
         }
 
-        public void setRunning(boolean b) {
-            synchronized (mRunLock) {
-                mRun = b;
-            }
+        @Override
+        public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            super.onSurfaceChanged(holder, format, width, height);
+            mCanvasWidth = width;
+            mCanvasHeight = height;
+            mBitmap = Bitmap.createBitmap(mCanvasWidth, mCanvasHeight, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(mBitmap);
+            c.drawARGB(255, 70, 69, 71); // Dark Grey
+            mPoint = 0;
         }
+
+        @Override
+        public void onSurfaceCreated(SurfaceHolder holder) {
+            super.onSurfaceCreated(holder);
+        }
+
+        @Override
+        public void onSurfaceDestroyed(SurfaceHolder holder) {
+            super.onSurfaceDestroyed(holder);
+            mVisible = false;
+            mHandler.removeCallbacks(mDrawGeeko);
+        }
+
+        /*
+        @Override
+        public void onOffsetsChanged(...)
+        */
 
         private Point[] generateTrunk() {
             Point[] p = new Point[4];
@@ -262,95 +315,26 @@ public class GeekoView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawBitmap(mBitmap, 0, 0, null);
         }
 
-        @Override
-        public void run() {
-            while (mRun) {
-                Canvas c = null;
-                try {
-                    c = mSurfaceHolder.lockCanvas(null);
-                    synchronized (mSurfaceHolder) {
-                        // mSurfaceHolder sync is in case surface changed while we're not looking
-                        synchronized(mRunLock) {
-                            // mRunLock sync is to ensure mRun isn't changed while we're
-                            // screwing around with the canvas (see LunarLander SDK sample for
-                            // this logic:
-                            //   https://android.googlesource.com/platform/development/+/master/samples/LunarLander/src/com/example/android/lunarlander/LunarView.java?autodive=0%2F%2F
-                            if (mRun) {
-                                doDraw(c);
-                            }
-                        }
-                    }
-                } finally {
-                    if (c != null) {
-                        mSurfaceHolder.unlockCanvasAndPost(c);
-                    }
-                }
+        void drawFrame() {
+            final SurfaceHolder holder = getSurfaceHolder();
 
-                try {
-                    sleep(mSleepDuration, 0);
-                } catch (InterruptedException e) {
-                    // Don't care
-                }
-
-            }
-        }
-    }
-
-    private GeekoThread mThread;
-    private Context mContext;
-    private SurfaceHolder mHolder;
-
-    public GeekoView(Context context) {
-        super(context);
-        mContext = context;
-        mHolder = getHolder();
-        mHolder.addCallback(this);
-    }
-
-    public void onPause() {
-        // Nothing to see here
-    }
-
-    public void onResume() {
-        // Nothing to see here
-    }
-
-
-    public void surfaceCreated(SurfaceHolder holder) {
-        // Tying the thread to the surface means it's created and destroyed nicely
-        // when switching away from the app, but means that rendering continues if
-        // you hit the power button to turn the screen off, or the screen blanks
-        // (i.e. the renderer keeps running, presumably chewing battery).  This
-        // is arguably undesirable, but makes for a simpler implementation.  The
-        // alternative is creating and killing the thread in onResume() / onPause(),
-        // but that means querying or caching the surface state and passing it
-        // to the renderer in onResume() in case the surface hasn't been destroyed.
-        // See https://source.android.com/devices/graphics/architecture.html#activity
-        // for further discussion.
-        // TODO: look at preserving the current bitmap across pause/resume
-        mThread = new GeekoThread(mHolder, mContext);
-        mThread.setRunning(true);
-        mThread.start();
-    }
-
-
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        mThread.setSurfaceSize(width, height);
-    }
-
-
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        boolean retry = true;
-        mThread.setRunning(false);
-        // Have to wait for the thread to finish, because it might be fiddling with
-        // the Surface, which can't be used after surfaceDestroyed() returns.
-        while (retry) {
+            Canvas c = null;
             try {
-                mThread.join();
-                retry = false;
-            } catch (InterruptedException e) {
-                // Don't care
+                c = holder.lockCanvas();
+                if (c != null) {
+                    doDraw(c);
+                }
+            } finally {
+                if (c != null) {
+                    holder.unlockCanvasAndPost(c);
+                }
+            }
+
+            mHandler.removeCallbacks(mDrawGeeko);
+            if (mVisible) {
+                mHandler.postDelayed(mDrawGeeko, mSleepDuration);
             }
         }
     }
+
 }
